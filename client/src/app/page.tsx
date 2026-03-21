@@ -22,14 +22,15 @@ export default function TraceCheckerHero() {
     setIsLoading(true);
     setIsError(false);
 
-    try {
-      // 1. Backend ko POST request bhej kar scan start karo
-      // Note: Backend 'scanType' field expect kar raha hai (Standard ya Deep)
-      const response = await axios.post('http://localhost:5000/api/v1/scan/start', {
-        target: target.trim(),
-        scanType: scanType === 'deep' ? 'Deep' : 'Standard'
-      });
+   try {
+  // 1. Backend URL ko environment variable se uthayein
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+  // 2. Ab axios request mein variable use karein
+  const response = await axios.post(`${API_BASE}/api/v1/scan/start`, {
+    target: target.trim(),
+    scanType: scanType === 'deep' ? 'Deep' : 'Standard'
+  });
       // 🛑 FIX: Backend response structure 'data._id' hai, 'scanId' nahi.
       if (response.data.success && response.data.data?._id) {
         const scanId = response.data.data._id;
