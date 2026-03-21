@@ -12,7 +12,8 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // 🔑 Secret key hamesha .env file mein honi chahiye
+  // Env variables for Production
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const PAYLOAD_SECRET = process.env.NEXT_PUBLIC_PAYLOAD_SECRET || 'trace_secret_payload_key';
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -20,34 +21,25 @@ export default function AdminLogin() {
     setIsLoading(true);
     setError('');
 
-   try {
-  // 1. Backend URL aur Secret ko Environment Variables se uthayein
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  const PAYLOAD_SECRET = process.env.NEXT_PUBLIC_PAYLOAD_SECRET || 'default_secret_key';
+    try {
+      // 🛡️ ENCRYPTION: Password ko bhejte waqt encrypt karna
+      const encryptedPassword = CryptoJS.AES.encrypt(password.trim(), PAYLOAD_SECRET).toString();
 
-  // 🛡️ ENCRYPTION
-  const encryptedPassword = CryptoJS.AES.encrypt(password.trim(), PAYLOAD_SECRET).toString();
+      // 🌐 API REQUEST
+      const res = await axios.post(`${API_BASE}/api/v1/auth/admin-login`, {
+        username: username.trim(),
+        encryptedPassword: encryptedPassword 
+      });
 
-  // 2. Ab Axios request mein dynamic API_BASE use karein
-  const res = await axios.post(`${API_BASE}/api/v1/auth/admin-login`, {
-    username: username.trim(),
-    encryptedPassword: encryptedPassword 
-  });
-
-  if (res.data.success) {
-    localStorage.setItem('adminToken', res.data.token);
-    window.location.href = '/admin'; // Dashboard par redirect
-  }
-} catch (error) {
-  console.error("Login Handshake Failed:", error);
-}
       if (res.data.success) {
-        // Token ko secure tarike se store karna
+        // Token store karein
         localStorage.setItem('adminToken', res.data.token);
-        router.push('/admin/dashboard'); 
+        
+        // Dashboard par bhejien (Make sure folder exists at /admin/dashboard)
+        router.push('/admin'); 
       }
     } catch (err: any) {
-      // Generic error message for security (taaki hacker ko pata na chale ki user sahi hai ya pass)
+      console.error("Login Handshake Failed:", err);
       setError(err.response?.data?.message || 'Access Denied: Invalid Credentials');
     } finally {
       setIsLoading(false);
@@ -55,7 +47,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#05070A] flex items-center justify-center font-sans p-6 overflow-hidden">
+    <div className="min-h-screen bg-[#05070A] flex items-center justify-center font-sans p-6 overflow-hidden relative">
       {/* Dynamic Background Glow */}
       <div className="absolute w-[500px] h-[500px] bg-[#06f9f9]/5 rounded-full blur-[120px] animate-pulse"></div>
 
@@ -85,6 +77,8 @@ export default function AdminLogin() {
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Admin Identity</label>
               <input 
                 type="text" 
+                name="username"
+                id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-[#05070A] border border-white/5 rounded-lg px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#06f9f9]/40 transition-all font-mono placeholder:text-slate-800"
@@ -97,6 +91,8 @@ export default function AdminLogin() {
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Encryption Key</label>
               <input 
                 type="password" 
+                name="password"
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-[#05070A] border border-white/5 rounded-lg px-4 py-3.5 text-sm text-white focus:outline-none focus:border-[#06f9f9]/40 transition-all font-mono placeholder:text-slate-800"
@@ -106,6 +102,7 @@ export default function AdminLogin() {
             </div>
 
             <button 
+              type="submit"
               disabled={isLoading}
               className="group w-full bg-[#06f9f9] text-black font-black py-4 rounded-lg uppercase text-[11px] tracking-[0.2em] hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(6,249,249,0.15)] flex items-center justify-center gap-2 disabled:opacity-50"
             >
