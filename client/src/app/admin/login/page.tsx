@@ -20,15 +20,27 @@ export default function AdminLogin() {
     setIsLoading(true);
     setError('');
 
-    try {
-      // 🛡️ ENCRYPTION: Password ko bhejte waqt encrypt karna
-      const encryptedPassword = CryptoJS.AES.encrypt(password.trim(), PAYLOAD_SECRET).toString();
+   try {
+  // 1. Backend URL aur Secret ko Environment Variables se uthayein
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const PAYLOAD_SECRET = process.env.NEXT_PUBLIC_PAYLOAD_SECRET || 'default_secret_key';
 
-      const res = await axios.post('http://localhost:5000/api/v1/auth/admin-login', {
-        username: username.trim(),
-        encryptedPassword: encryptedPassword // Plain password ki jagah encrypted bhej rahe hain
-      });
+  // 🛡️ ENCRYPTION
+  const encryptedPassword = CryptoJS.AES.encrypt(password.trim(), PAYLOAD_SECRET).toString();
 
+  // 2. Ab Axios request mein dynamic API_BASE use karein
+  const res = await axios.post(`${API_BASE}/api/v1/auth/admin-login`, {
+    username: username.trim(),
+    encryptedPassword: encryptedPassword 
+  });
+
+  if (res.data.success) {
+    localStorage.setItem('adminToken', res.data.token);
+    window.location.href = '/admin'; // Dashboard par redirect
+  }
+} catch (error) {
+  console.error("Login Handshake Failed:", error);
+}
       if (res.data.success) {
         // Token ko secure tarike se store karna
         localStorage.setItem('adminToken', res.data.token);
