@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit'; // 🚨 Added for Security
 import connectDB from './config/db';
+import { seedAdmin } from './seedAdmin';
 
 // Routes Import
 import scanRoutes from './routes/scanRoutes';
@@ -14,7 +15,10 @@ dotenv.config();
 const app = express();
 
 // 1. Database Connection
-connectDB();
+connectDB().then(() => {
+  console.log("✅ DB Connected");
+  seedAdmin(); // Ye function server start hote hi admin create kar dega
+});
 
 // 2. SECURITY MIDDLEWARES 🛡️
 
